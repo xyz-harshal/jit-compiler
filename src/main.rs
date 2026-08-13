@@ -10,6 +10,9 @@ use backend::interpreter::eval;
 mod codegen;
 use codegen::emitter::Emitter;
 
+mod mem;
+use mem::alloc::ExecutableMem;
+
 fn main() {
     let content: String = std::fs::read_to_string("input.txt").unwrap();
     match parse(&content) {
@@ -18,7 +21,12 @@ fn main() {
             let mut emitter = Emitter::new();
             emitter.emit_mov_rax_imm64(eval(&expr));
             emitter.emit_ret();
-            println!("{:?}", emitter.finish());
+
+            let func: Vec<u8> = emitter.finish();
+            let memory = ExecutableMem::new(func.len()).unwrap();
+            memory.write_code(func).unwrap();
+            memory.make_executable().unwrap();
+            println!("{:?}", unsafe { memory.execute_code() });
         },
         Err(err) => println!("Error: {}", err),
     }

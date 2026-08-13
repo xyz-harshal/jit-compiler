@@ -1,9 +1,18 @@
 use libc;
 use std::ptr;
+use std::ffi::c_void;
 
 pub struct ExecutableMem {
     ptr: *mut u8, //raw pointer to the first u8
     size: usize, //size of the executable memory
+}
+
+impl Drop for ExecutableMem {
+    fn drop(&mut self) {
+        unsafe {
+            libc::munmap(self.ptr as *mut c_void, self.size);
+        }
+    }
 }
 
 impl ExecutableMem {
@@ -51,7 +60,8 @@ impl ExecutableMem {
         }
     }
 
-    pub fn execute_code() -> {
-
+    pub unsafe fn execute_code(&self) -> i64 {
+        let func: extern "C" fn() -> i64 = unsafe { std::mem::transmute(self.ptr) };
+        func()
     }
 }
