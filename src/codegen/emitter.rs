@@ -17,6 +17,11 @@ impl Emitter {
         self.buf.push(0xB8); //The opcode for MOV
         self.buf.extend_from_slice(&val.to_le_bytes()); //pushing the values in an little endian way.
     }
+    pub fn emit_mov_rdi_rax(&mut self) {
+        self.buf.push(0x48);
+        self.buf.push(0x89);
+        self.buf.push(0xC7); //ModR/M byte because 2 registers are involved
+    }
     pub fn emit_push_rax(&mut self) {
         self.buf.push(0x50); //The opcode for PUSH from rax
     }
@@ -26,12 +31,21 @@ impl Emitter {
     pub fn emit_add_rax_rbx(&mut self) {
         self.buf.push(0x48);
         self.buf.push(0x01); //The opcode to ADD any 2 registers or memloc
-        self.buf.push(0xD8); //MOD-RM to state whether registers or memloc and the byte encoding of the src and des.
+        self.buf.push(0xD8); //ModR/M to state whether registers or memloc and the byte encoding of the src and des.
+    }
+    pub fn emit_add_rsp_imm8(&mut self, val: u8){
+        self.buf.extend_from_slice(&[0x48, 0x83, 0xC4, val]);
     }
     pub fn emit_sub_rax_rbx(&mut self) {
         self.buf.push(0x48);
         self.buf.push(0x29); //The opcode to SUB any 2 regsiters or memloc
         self.buf.push(0xD8);
+    }
+    pub fn emit_sub_rsp_imm8(&mut self, val: u8) {
+        self.buf.extend_from_slice(&[0x48, 0x83, 0xEC, val]);
+    }
+    pub fn emit_call_rax(&mut self) {
+        self.buf.extend_from_slice(&[0xFF, 0xD0]);
     }
     pub fn finish(self) -> Vec<u8> {
         self.buf

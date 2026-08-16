@@ -10,18 +10,33 @@ use codegen::{emitter::Emitter, compiler::compile};
 mod mem;
 use mem::alloc::ExecutableMem;
 
+extern "C" fn print_val(val: i64) -> i64 {
+    println!("{}", val);
+    val
+}
+
 fn main() {
     let content: String = std::fs::read_to_string("input.txt").unwrap();
     match parse(&content) {
         Ok(expr) => {
             let mut emitter = Emitter::new();
             compile(&expr, &mut emitter);
+            emitter.emit_mov_rdi_rax();
+            let func_ptr: usize = print_val as *const () as usize;
+            emitter.emit_mov_rax_imm64(func_ptr as i64);
+            emitter.emit_sub_rsp_imm8(8);
+            emitter.emit_call_rax();
+            emitter.emit_add_rsp_imm8(8);
             emitter.emit_ret();
+
             let func: Vec<u8> = emitter.finish();
+
             let memory = ExecutableMem::new(func.len()).unwrap();
             memory.write_code(func).unwrap();
             memory.make_executable().unwrap();
-            println!("{:?}", unsafe { memory.execute_code() });
+            unsafe {
+                memory.execute_code();
+            }
         },
         Err(err) => println!("Error: {}", err),
     }

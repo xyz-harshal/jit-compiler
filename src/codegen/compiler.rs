@@ -1,6 +1,7 @@
 use crate::frontend::ast::Expr;
 use crate::codegen::emitter::Emitter;
 
+//The final value will be stored in the rax register
 pub fn compile(expr: &Expr, emitter: &mut Emitter) {
     match expr {
         Expr::Number(n) => {
