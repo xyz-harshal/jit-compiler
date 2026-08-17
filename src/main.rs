@@ -6,7 +6,7 @@ use frontend::ast::Expr;
 mod backend;
 use backend::interpreter::eval;
 mod codegen;
-use codegen::{emitter::Emitter, compiler::compile, regalloc::RegisterAllocator};
+use codegen::{emitter::Emitter, compiler::compile, regalloc::{RegisterAllocator, Reg}};
 mod mem;
 use mem::alloc::ExecutableMem;
 
@@ -22,12 +22,33 @@ fn run_jit(expr: &Expr) -> i64 {
     unsafe { memory.execute_code() }
 }
 
+fn run_jit_with_print(expr: &Expr) {
+    let mut emitter = Emitter::new();
+    let mut regalloc = RegisterAllocator::new();
+    compile(expr, &mut emitter, &mut regalloc);
+    emitter.emit_mov_reg_reg(Reg::Rdi, Reg::Rax);
+    let func_ptr: usize = print_val as *const () as usize;
+    emitter.emit_mov_reg_imm64(Reg::Rax, func_ptr as i64);
+    emitter.emit_sub_reg_imm8(Reg::Rsp, 8);
+    emitter.emit_call_reg(Reg::Rax);
+    emitter.emit_add_reg_imm8(Reg::Rsp, 8);
+    emitter.emit_ret();
+    let bytes = emitter.finish();
+    let memory = ExecutableMem::new(bytes.len()).unwrap();
+    memory.write_code(bytes).unwrap();
+    memory.make_executable().unwrap();
+    unsafe { memory.execute_code(); }
+}
+
+extern "C" fn print_val(val: i64) -> i64 {
+    println!("{}", val);
+    val
+}
+
 fn main() {
     let content: String = std::fs::read_to_string("input.txt").unwrap();
     match parse(&content) {
-        Ok(expr) => {
-            println!("{:?}", run_jit(&expr));
-        },
+        Ok(expr) => run_jit_with_print(&expr),
         Err(err) => println!("Error: {}", err),
     }
 }
