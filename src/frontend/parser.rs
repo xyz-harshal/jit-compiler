@@ -4,7 +4,7 @@ pub fn parse(input: &str) -> Result<Expr, String> {
 
     let input: &str = input.trim();
     let add: Option<usize> = input.rfind('+');
-    let sub: Option<usize> = input.rfind('-');
+    let sub: Option<usize> = input[1..].rfind('-').map(|idx| idx + 1);
 
     //when you write Some(a) in a match pattern then it checks if Option is an Some(a) if yes then the value gets extracted inside and call it a.
     let res: Expr = match (add, sub) {
@@ -75,5 +75,9 @@ mod tests {
                 Box::new(Expr::Number(2))
             ))
         );
+    }
+    #[test]
+    fn parses_negative_number() {
+        assert_eq!(parse("-5"), Ok(Expr::Number(-5)));
     }
 }

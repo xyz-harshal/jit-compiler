@@ -60,8 +60,8 @@ impl ExecutableMem {
         }
     }
 
-    pub unsafe fn execute_code(&self) {
-        let func: extern "C" fn() = unsafe { std::mem::transmute(self.ptr) };
-        func();
+    pub unsafe fn execute_code(&self) -> i64{
+        let func: extern "C" fn() -> i64 = unsafe { std::mem::transmute(self.ptr) };
+        func()
     }
 }

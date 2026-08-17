@@ -1,3 +1,5 @@
+use crate::codegen::regalloc::{Reg, reg_encode};
+
 #[derive(Debug, PartialEq, Eq)]
 pub struct Emitter {
     buf: Vec<u8>,
@@ -12,41 +14,44 @@ impl Emitter {
     pub fn emit_ret(&mut self) {
         self.buf.push(0xC3);
     }
-    pub fn emit_mov_rax_imm64(&mut self, val: i64) {
-        self.buf.push(0x48); //REX.W prefix for using the x86_32 opcode in x86_64 architecture.
-        self.buf.push(0xB8); //The opcode for MOV
-        self.buf.extend_from_slice(&val.to_le_bytes()); //pushing the values in an little endian way.
+
+    pub fn emit_mov_reg_imm64(&mut self, reg: Reg, val: i64) {
+        self.buf.extend_from_slice(&[0x48, 0xB8 + reg_encode(reg)]);
+        self.buf.extend_from_slice(&val.to_le_bytes());
     }
-    pub fn emit_mov_rdi_rax(&mut self) {
-        self.buf.push(0x48);
-        self.buf.push(0x89);
-        self.buf.push(0xC7); //ModR/M byte because 2 registers are involved
+
+    pub fn emit_mov_reg_reg(&mut self, dst: Reg, src: Reg) {
+        self.buf.extend_from_slice(&[0x48, 0x89, 0xC0 + (reg_encode(src) << 3) + reg_encode(dst)]);
     }
-    pub fn emit_push_rax(&mut self) {
-        self.buf.push(0x50); //The opcode for PUSH from rax
+
+    pub fn emit_push_reg(&mut self, reg: Reg){
+        self.buf.push(0x50 + reg_encode(reg));
     }
-    pub fn emit_pop_rbx(&mut self) {
-        self.buf.push(0x5B); //The opcode to POP and store it in rbx
+
+    pub fn emit_pop_reg(&mut self, reg: Reg) {
+        self.buf.push(0x58 + reg_encode(reg));
     }
-    pub fn emit_add_rax_rbx(&mut self) {
-        self.buf.push(0x48);
-        self.buf.push(0x01); //The opcode to ADD any 2 registers or memloc
-        self.buf.push(0xD8); //ModR/M to state whether registers or memloc and the byte encoding of the src and des.
+
+    pub fn emit_add_reg_reg(&mut self, dst: Reg, src: Reg) {
+        self.buf.extend_from_slice(&[0x48, 0x01, 0xC0 + (reg_encode(src) << 3) + reg_encode(dst)]);
     }
-    pub fn emit_add_rsp_imm8(&mut self, val: u8){
-        self.buf.extend_from_slice(&[0x48, 0x83, 0xC4, val]);
+
+    pub fn emit_add_reg_imm8(&mut self, reg: Reg, val: u8) {
+        self.buf.extend_from_slice(&[0x48, 0x83, 0xC0 + reg_encode(reg), val]);
     }
-    pub fn emit_sub_rax_rbx(&mut self) {
-        self.buf.push(0x48);
-        self.buf.push(0x29); //The opcode to SUB any 2 regsiters or memloc
-        self.buf.push(0xD8);
+
+    pub fn emit_sub_reg_reg(&mut self, dst: Reg, src: Reg) {
+        self.buf.extend_from_slice(&[0x48, 0x29, 0xC0 + (reg_encode(src) << 3) + reg_encode(dst)]);
     }
-    pub fn emit_sub_rsp_imm8(&mut self, val: u8) {
-        self.buf.extend_from_slice(&[0x48, 0x83, 0xEC, val]);
+
+    pub fn emit_sub_reg_imm8(&mut self, reg: Reg, val: u8) {
+        self.buf.extend_from_slice(&[0x48, 0x83, 0xC0 + 0x28 + reg_encode(reg), val]);
     }
-    pub fn emit_call_rax(&mut self) {
-        self.buf.extend_from_slice(&[0xFF, 0xD0]);
+
+    pub fn emit_call_reg(&mut self, reg: Reg) {
+        self.buf.extend_from_slice(&[0xFF, 0xC0 + 0x10 + reg_encode(reg)]);
     }
+
     pub fn finish(self) -> Vec<u8> {
         self.buf
     }
@@ -54,11 +59,11 @@ impl Emitter {
 
 #[cfg(test)]
 mod tests {
-    use crate::codegen::emitter::Emitter;
+    use crate::codegen::{emitter::Emitter, regalloc::{Reg, reg_encode}};
     #[test]
     fn mov_number() {
         let mut emitter = Emitter::new();
-        emitter.emit_mov_rax_imm64(69);
+        emitter.emit_mov_reg_imm64(Reg::Rax, 69);
         emitter.emit_ret();
         assert_eq!(emitter.finish(), [0x48, 0xB8, 69, 0, 0, 0, 0, 0, 0, 0, 0xC3]);
     }
