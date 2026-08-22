@@ -10,5 +10,8 @@ pub fn eval(expr: &Expr) -> i64 {
         Expr::Sub(left, right) => {
             eval(left) - eval(right)
         },
+        Expr::Mul(left, right) => {
+            eval(left) * eval(right)
+        },
     }
 }

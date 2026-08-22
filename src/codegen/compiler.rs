@@ -41,5 +41,22 @@ pub fn compile(expr: &Expr, emitter: &mut Emitter, regalloc: &mut RegisterAlloca
                 }
             }
         },
+        Expr::Mul(left, right) => {
+            compile(left, emitter, regalloc);
+            match regalloc.get_reg() {
+                Ok(reg) => {
+                    emitter.emit_mov_reg_reg(reg, Reg::Rax);
+                    compile(right, emitter, regalloc);
+                    emitter.emit_mul_reg_reg(Reg::Rax, reg);
+                    regalloc.free_reg(reg);
+                },
+                Err(_) => {
+                    emitter.emit_push_reg(Reg::Rax);
+                    compile(right, emitter, regalloc);
+                    emitter.emit_pop_reg(Reg::Rbx);
+                    emitter.emit_mul_reg_reg(Reg::Rax, Reg::Rbx);
+                }
+            }
+        },
     }
 }

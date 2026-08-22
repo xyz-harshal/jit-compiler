@@ -1,35 +1,40 @@
 use crate::frontend::ast::Expr;
 
+enum Ops {
+    Add,
+    Sub,
+    Mul,
+}
+
+fn symbol_match(c: char) -> Result<Ops, String> {
+    match c {
+        '+' => Ok(Ops::Add),
+        '-' => Ok(Ops::Sub),
+        '*' => Ok(Ops::Mul),
+        _ => Err("Not a operation".to_string()),
+    }
+}
+
 pub fn parse(input: &str) -> Result<Expr, String> {
-
     let input: &str = input.trim();
-    let add: Option<usize> = input.rfind('+');
-    let sub: Option<usize> = input[1..].rfind('-').map(|idx| idx + 1);
-
-    //when you write Some(a) in a match pattern then it checks if Option is an Some(a) if yes then the value gets extracted inside and call it a.
-    let res: Expr = match (add, sub) {
-        (Some(a), Some(s)) => {
-            let x: usize = a.max(s);
-            let (left, right) : (&str, &str) = input.split_at(x);
-            let right: &str = &right[1..];
-            match a > s {
-                true => Expr::Add(Box::new(parse(left)?), Box::new(parse(right)?)),
-                false => Expr::Sub(Box::new(parse(left)?), Box::new(parse(right)?)),
-            }
-        },
-        (Some(a), None) => {
-            let (left, right) : (&str, &str) = input.split_at(a);
-            let right: &str = &right[1..];
-            Expr::Add(Box::new(parse(left)?), Box::new(parse(right)?))
-        },
-        (None, Some(s)) => {
-            let (left, right) : (&str, &str) = input.split_at(s);
-            let right: &str = &right[1..];
-            Expr::Sub(Box::new(parse(left)?), Box::new(parse(right)?))
-        },
-        (None, None) => Expr::Number(input.parse::<i64>().map_err(|_| "Not a Number".to_string())?),
-    };
-    Ok(res)
+    for i in (0..input.len()).rev() {
+        let c = input.chars().nth(i).unwrap();
+        if c == '-' && i == 0 { continue; }
+        let res: Expr = match symbol_match(c) {
+            Ok(ops) => {
+                let (left, right) = input.split_at(i);
+                let right = &right[1..];
+                match ops {
+                    Ops::Add => Expr::Add(Box::new(parse(left)?), Box::new(parse(right)?)),
+                    Ops::Sub => Expr::Sub(Box::new(parse(left)?), Box::new(parse(right)?)),
+                    Ops::Mul => Expr::Mul(Box::new(parse(left)?), Box::new(parse(right)?)),
+                }
+            },
+            _ => continue,
+        };
+        return Ok(res);
+    }
+    Ok(Expr::Number(input.parse::<i64>().map_err(|_| "Not a Number".to_string())?))
 }
 
 #[cfg(test)]

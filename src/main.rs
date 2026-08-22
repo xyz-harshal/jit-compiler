@@ -124,4 +124,36 @@ mod jit_correctness_tests {
     fn large_i64() {
         assert_matches("9223372036854775800+5");
     }
+    #[test]
+    fn simple_mul() {
+        assert_matches("6 * 7");
+    }
+    #[test]
+    fn mul_with_negative() { 
+        assert_matches("-4 * 5");
+    }
+    #[test]
+    fn mul_chain_forces_spill() {
+        assert_matches("2*2*2*2*2*2*2");
+    }
+    #[test]
+    fn mixed_add_mul() {
+        assert_matches("2+3*4");
+    }
+    #[test]
+    fn mixed_sub_mul() {
+        assert_matches("10-2*3");
+    }
+    #[test]
+    fn mixed_all_three() {
+        assert_matches("10-3*2+4");
+    }
+    #[test]
+    fn mul_by_zero() {
+        assert_matches("999*0");
+    }
+    #[test]
+    fn mul_large_values() {
+        assert_matches("1000000000*3");
+    }
 }

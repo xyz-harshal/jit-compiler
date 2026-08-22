@@ -36,6 +36,10 @@ impl Emitter {
         self.buf.extend_from_slice(&[0x48, 0x01, 0xC0 + (reg_encode(src) << 3) + reg_encode(dst)]);
     }
 
+    pub fn emit_mul_reg_reg(&mut self, dst: Reg, src: Reg) {
+        self.buf.extend_from_slice(&[0x48, 0x0F, 0xAF, 0xC0 + (reg_encode(dst) << 3) + reg_encode(src)]);
+    }
+
     pub fn emit_add_reg_imm8(&mut self, reg: Reg, val: u8) {
         self.buf.extend_from_slice(&[0x48, 0x83, 0xC0 + reg_encode(reg), val]);
     }
